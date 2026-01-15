@@ -39,7 +39,7 @@ prompt = """
 ALLOWED_USER_IDS  = [
     "priti",
     "anindita",
-    "deepinder"
+    "deepinder",
     "jyothi",
     "revanth",
     "naman"

@@ -35,6 +35,16 @@ prompt = """
 "You are a helpful assistant that can answer questions and help with tasks."
 """
 
+# In memory user id's allowed to chat
+ALLOWED_USER_IDS  = [
+    "priti",
+    "anindita",
+    "deepinder"
+    "jyothi",
+    "revanth",
+    "naman"
+]
+
 #Models
 class ChatRequest(BaseModel):
     user_id: str
@@ -58,6 +68,12 @@ async def health_check():
 
 @app.post("/chat", response_model=ChatResponse)
 async def chat(request: ChatRequest):
+    user_id = request.user_id
+    if user_id not in ALLOWED_USER_IDS:
+        raise HTTPException(
+            status_code=403,
+            detail=f"User {user_id} is not allowed to chat. Please contact support@masaischool.com"
+        )
     print(f"Received request from user {request.user_id}: {request.message}")
     full_prompt = f"{prompt}\n\nUser: {request.message}\nAssistant:"
     start_time = time.time()

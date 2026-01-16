@@ -108,18 +108,21 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           LLM_MODEL: ${{ secrets.LLM_MODEL }}
           GITHUB_REPOSITORY: ${{ github.repository }}
+          DOCKER_IMAGE_TAG: ${{ github.sha }}
         with:
           host: ${{ secrets.DROPLET_IP }}
           username: ${{ secrets.DROPLET_USER }}
           key: ${{ secrets.DROPLET_SSH_KEY }}
-          envs: OPENAI_API_KEY,LLM_MODEL,GITHUB_REPOSITORY
+          envs: OPENAI_API_KEY,LLM_MODEL,GITHUB_REPOSITORY,DOCKER_IMAGE_TAG
           script: |
             cd /opt/llm-chat-app
             chmod +x scripts/deploy.sh
             export OPENAI_API_KEY="${OPENAI_API_KEY}"
             export LLM_MODEL="${LLM_MODEL}"
             export GITHUB_REPOSITORY="${GITHUB_REPOSITORY}"
-            bash scripts/deploy.sh $(echo $GITHUB_SHA | head -c7)
+            SHORT_SHA=$(echo "${DOCKER_IMAGE_TAG}" | cut -c1-7)
+            echo "Deploying image tag: ${SHORT_SHA}"
+            bash scripts/deploy.sh "${SHORT_SHA}"
       
       - name: Verify deployment
         run: |

@@ -93,6 +93,15 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
       
+      - name: Copy deployment script to droplet
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.DROPLET_IP }}
+          username: ${{ secrets.DROPLET_USER }}
+          key: ${{ secrets.DROPLET_SSH_KEY }}
+          source: "scripts/deploy.sh"
+          target: "/opt/llm-chat-app/"
+      
       - name: Deploy to DigitalOcean Droplet
         uses: appleboy/ssh-action@v1.0.0
         env:
@@ -106,6 +115,7 @@ jobs:
           envs: OPENAI_API_KEY,LLM_MODEL,GITHUB_REPOSITORY
           script: |
             cd /opt/llm-chat-app
+            chmod +x scripts/deploy.sh
             export OPENAI_API_KEY="${OPENAI_API_KEY}"
             export LLM_MODEL="${LLM_MODEL}"
             export GITHUB_REPOSITORY="${GITHUB_REPOSITORY}"

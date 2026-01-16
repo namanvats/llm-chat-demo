@@ -4,12 +4,16 @@
 
 set -e
 
+# Set non-interactive mode for apt
+export DEBIAN_FRONTEND=noninteractive
+
 echo "🚀 Setting up DigitalOcean Droplet for LLM Chat App"
 echo "=================================================="
 
 # Update system
 echo "📦 Updating system packages..."
-sudo apt update && sudo apt upgrade -y
+sudo -E apt-get update
+sudo -E apt-get upgrade -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold"
 
 # Install Docker
 echo "🐳 Installing Docker..."
@@ -26,15 +30,18 @@ fi
 # Install Nginx
 echo "🌐 Installing Nginx..."
 if ! command -v nginx &> /dev/null; then
-    sudo apt install nginx -y
+    sudo -E apt-get install -y nginx
     sudo systemctl enable nginx
+    sudo systemctl start nginx
     echo "✅ Nginx installed"
 else
     echo "✅ Nginx already installed"
 fi
 
-# Install curl
-sudo apt install curl -y
+# Install curl (usually pre-installed but ensure it exists)
+echo "📦 Ensuring curl is installed..."
+sudo -E apt-get install -y curl
+echo "✅ curl ready"
 
 # Create app directory
 echo "📁 Creating application directory..."
@@ -42,43 +49,52 @@ sudo mkdir -p /opt/llm-chat-app/scripts
 sudo chown $USER:$USER /opt/llm-chat-app
 echo "✅ Directory created"
 
-# Prompt for GitHub details
+# GitHub Container Registry Login
 echo ""
 echo "🔑 GitHub Container Registry Login"
-echo "You need a GitHub Personal Access Token with 'read:packages' scope"
-echo "Create one at: https://github.com/settings/tokens"
-echo ""
-read -p "Enter your GitHub username: " GITHUB_USER
-read -sp "Enter your GitHub Personal Access Token: " GITHUB_TOKEN
-echo ""
 
-# Login to GitHub Container Registry
-echo "$GITHUB_TOKEN" | docker login ghcr.io -u "$GITHUB_USER" --password-stdin
-
-if [ $? -eq 0 ]; then
-    echo "✅ Logged in to GitHub Container Registry"
+# Check if credentials are provided via environment variables
+if [ -z "$GITHUB_USER" ] || [ -z "$GITHUB_TOKEN" ]; then
+    echo "⚠️  GITHUB_USER or GITHUB_TOKEN not set as environment variables"
+    echo ""
+    echo "You need a GitHub Personal Access Token with 'read:packages' scope"
+    echo "Create one at: https://github.com/settings/tokens"
+    echo ""
+    echo "To login later, run:"
+    echo "  echo \$GITHUB_TOKEN | docker login ghcr.io -u \$GITHUB_USER --password-stdin"
+    echo ""
+    echo "⏭️  Skipping GHCR login for now..."
 else
-    echo "❌ Failed to login to GHCR. Please check your credentials."
-    exit 1
+    # Login to GitHub Container Registry
+    echo "Logging in to GHCR as $GITHUB_USER..."
+    echo "$GITHUB_TOKEN" | docker login ghcr.io -u "$GITHUB_USER" --password-stdin
+    
+    if [ $? -eq 0 ]; then
+        echo "✅ Logged in to GitHub Container Registry"
+    else
+        echo "❌ Failed to login to GHCR. Please check your credentials."
+        echo "You can login manually later with:"
+        echo "  echo \$GITHUB_TOKEN | docker login ghcr.io -u \$GITHUB_USER --password-stdin"
+    fi
 fi
-
-# Reload docker group
-echo "🔄 Activating docker group..."
-newgrp docker <<EOF
-echo "✅ Docker group activated"
-EOF
 
 echo ""
 echo "=================================================="
 echo "✅ Droplet setup complete!"
 echo ""
 echo "Next steps:"
-echo "1. Configure Nginx (see DEPLOYMENT_GUIDE.md)"
-echo "2. Add GitHub secrets to your repository"
-echo "3. Push to main branch to trigger deployment"
 echo ""
-echo "To configure Nginx, run:"
-echo "  sudo nano /etc/nginx/sites-available/llm-chat-app"
+echo "1. Login to GitHub Container Registry (if not done above):"
+echo "   export GITHUB_USER='your-github-username'"
+echo "   export GITHUB_TOKEN='your-github-token'"
+echo "   echo \$GITHUB_TOKEN | docker login ghcr.io -u \$GITHUB_USER --password-stdin"
 echo ""
-echo "Then copy the nginx configuration from config/nginx-llm-chat-app"
+echo "2. Copy deploy.sh script to /opt/llm-chat-app/scripts/"
+echo "   (This will be done automatically by GitHub Actions)"
+echo ""
+echo "3. Configure Nginx for your app"
+echo "4. Add GitHub secrets to your repository"
+echo "5. Push to main branch to trigger deployment"
+echo ""
+echo "⚠️  IMPORTANT: You may need to log out and back in for docker group to take effect"
 echo "=================================================="

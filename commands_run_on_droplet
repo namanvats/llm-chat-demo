@@ -6,3 +6,6 @@ Dpkg::Options {
 }
 EOF
 
+
+No passphrase for the key
+ssh-keygen -t rsa -b 4096 -f ~/.ssh/droplet_deploy_key -N ""

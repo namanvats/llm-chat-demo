@@ -1,0 +1,8 @@
+# To ensure no UI things come up during setup
+sudo tee /etc/apt/apt.conf.d/99force-conf <<'EOF'
+Dpkg::Options {
+  "--force-confdef";
+  "--force-confold";
+}
+EOF
+

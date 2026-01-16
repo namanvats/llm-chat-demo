@@ -36,6 +36,7 @@ prompt = """
 """
 
 # In memory user id's allowed to chat
+# Real world these things will come from a DB
 ALLOWED_USER_IDS  = [
     "priti",
     "anindita",
